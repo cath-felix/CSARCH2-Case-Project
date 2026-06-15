@@ -1,0 +1,68 @@
+---
+title: "How a Keyboard Works: From Keypress to Character"
+layout: "../layouts/BaseLayout.astro"
+---
+
+import InteractiveKeyboard from '../components/InteractiveKeyboard.jsx';
+
+# ⌨️ How a Keyboard Works: From Keypress to Character
+
+## Introduction
+
+Every time you type on a keyboard, a complex but lightning-fast process happens. This exhibit breaks down **how a simple keypress becomes a character on your screen**.
+
+---
+
+## The 5-Step Journey of a Keypress
+
+### 1. 👆 You Press a Key
+When you push down a key, you're pressing against a rubber dome or mechanical switch underneath.
+
+### 2. ⚡ The Switch Closes
+The keypress completes an electrical circuit. This sends a small electrical signal to the keyboard's microprocessor.
+
+### 3. 📡 Scan Code is Generated
+The keyboard's processor identifies *which* key was pressed and generates a unique number called a **scan code** (e.g., 'A' = 0x1C).
+
+### 4. 🖥️ Computer Receives the Signal
+The scan code travels through the USB/Bluetooth connection to your computer's operating system.
+
+### 5. ✨ Character Appears on Screen
+The OS looks up the scan code in its **keyboard layout table** (mapping scan codes to letters) and displays the character.
+
+---
+
+## Try It Yourself!
+
+Click on the virtual keyboard below to see the process in action:
+
+<InteractiveKeyboard />
+
+---
+
+## Key Components of a Modern Keyboard
+
+| Component | Function |
+|-----------|----------|
+| **Keycaps** | The visible buttons you press |
+| **Switches** | Mechanical or membrane components that complete circuits |
+| **Microcontroller** | Processes keypresses and generates scan codes |
+| **Interface Cable** | USB/Bluetooth that sends data to computer |
+| **Driver Software** | OS component that maps scan codes to characters |
+
+---
+
+## Fun Facts
+
+- A typical keyboard sends data at **1,000 reports per second** (1ms response time)
+- The **QWERTY** layout was designed in 1873 to prevent typewriter jams
+- Some gaming keyboards can register **100+ keypresses simultaneously** (N-key rollover)
+
+---
+
+## Learn More
+
+- [How Computer Keyboards Work (HowStuffWorks)](https://computer.howstuffworks.com/keyboard.htm)
+- [USB HID Keyboard Specification](https://www.usb.org/hid)
+
+---
