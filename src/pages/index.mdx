@@ -1,68 +1,68 @@
 ---
-title: "How a Keyboard Works: From Keypress to Character"
+title: "Texture Filtering in 3D: From Pixels to Reality"
 layout: "../layouts/BaseLayout.astro"
 ---
 
-import InteractiveKeyboard from '../components/InteractiveKeyboard.jsx';
+import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
 
-# ⌨️ How a Keyboard Works: From Keypress to Character 
+<div class="prose prose-lg max-w-none">
+  # 🎮 Texture Filtering in 3D: From Pixels to Reality
 
-## Introduction
+  ## Introduction
 
-Every time you type on a keyboard, a complex but lightning-fast process happens. This exhibit breaks down **how a simple keypress becomes a character on your screen**.
+  When you play a game or watch a 3D movie, textures (the images wrapped around 3D objects) need to be displayed correctly at various distances and angles. This process is called **texture filtering** — a critical function of modern GPUs.
 
----
+  ---
 
-## The 5-Step Journey of a Keypress
+  ## Why Texture Filtering Matters
 
-### 1. 👆 You Press a Key
-When you push down a key, you're pressing against a rubber dome or mechanical switch underneath.
+  Without texture filtering, 3D graphics would look:
+  - **Pixelated** when zoomed in (blocky squares)
+  - **Aliased** (jagged edges) when viewed at angles
+  - **Distorted** when objects are far away
 
-### 2. ⚡ The Switch Closes
-The keypress completes an electrical circuit. This sends a small electrical signal to the keyboard's microprocessor.
+  ---
 
-### 3. 📡 Scan Code is Generated
-The keyboard's processor identifies *which* key was pressed and generates a unique number called a **scan code** (e.g., 'A' = 0x1C).
+  ## The 4 Main Texture Filtering Methods
 
-### 4. 🖥️ Computer Receives the Signal
-The scan code travels through the USB/Bluetooth connection to your computer's operating system.
+  | Method | Quality | Performance | How It Works |
+  |--------|---------|-------------|--------------|
+  | **Nearest Neighbor** | Low | Fastest | Uses the closest pixel (no blending) |
+  | **Bilinear** | Medium | Good | Averages 2x2 surrounding pixels |
+  | **Trilinear** | High | Heavy | Bilinear + MIPMAP blending |
+  | **Anisotropic** | Best | Most demanding | Accounts for viewing angle |
 
-### 5. ✨ Character Appears on Screen
-The OS looks up the scan code in its **keyboard layout table** (mapping scan codes to letters) and displays the character.
+  ---
 
----
+  ## How Texture Filtering Works in the GPU Pipeline
 
-## Try It Yourself!
+  ### Step 1: Texture Coordinates (UV Mapping)
+  Each 3D object has UV coordinates that map its surface to a 2D texture image.
 
-Click on the virtual keyboard below to see the process in action:
+  ### Step 2: Pixel Mapping
+  The GPU calculates which texture pixels (texels) correspond to each screen pixel.
 
-<InteractiveKeyboard />
+  ### Step 3: Filtering Applied
+  - **Minification** (texture too small → stretched): Uses MIPMAPs
+  - **Magnification** (texture too big → zoomed in): Blends nearby texels
 
----
+  ### Step 4: Final Pixel Color
+  The filtered result is displayed on screen.
 
-## Key Components of a Modern Keyboard
+  ---
 
-| Component | Function |
-|-----------|----------|
-| **Keycaps** | The visible buttons you press |
-| **Switches** | Mechanical or membrane components that complete circuits |
-| **Microcontroller** | Processes keypresses and generates scan codes |
-| **Interface Cable** | USB/Bluetooth that sends data to computer |
-| **Driver Software** | OS component that maps scan codes to characters |
+  ## Interactive Demo
 
----
+  Click the buttons below to see how different texture filtering methods look:
 
-## Fun Facts
+</div>
 
-- A typical keyboard sends data at **1,000 reports per second** (1ms response time)
-- The **QWERTY** layout was designed in 1873 to prevent typewriter jams
-- Some gaming keyboards can register **100+ keypresses simultaneously** (N-key rollover)
+<TextureFilterDemo />
 
----
+<div class="prose prose-lg max-w-none">
 
-## Learn More
+  ---
 
-- [How Computer Keyboards Work (HowStuffWorks)](https://computer.howstuffworks.com/keyboard.htm)
-- [USB HID Keyboard Specification](https://www.usb.org/hid)
+  ## MIPMAPs: The Performance Hack
 
----
+  **MIPMAPs** are pre-scaled copies of a texture (like a pyramid). When an object is far away, the GPU uses the smaller version instead of shrinking the full texture.
