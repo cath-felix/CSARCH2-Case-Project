@@ -5,64 +5,97 @@ layout: "../layouts/BaseLayout.astro"
 
 import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
 
-<div class="prose prose-lg max-w-none">
-  # 🎮 Texture Filtering in 3D: From Pixels to Reality
+# 🎮 Texture Filtering in 3D: From Pixels to Reality
 
-  ## Introduction
+## Introduction
 
-  When you play a game or watch a 3D movie, textures (the images wrapped around 3D objects) need to be displayed correctly at various distances and angles. This process is called **texture filtering** — a critical function of modern GPUs.
+When you play a game or watch a 3D movie, textures (the images wrapped around 3D objects) need to be displayed correctly at various distances and angles. This process is called **texture filtering** — a critical function of modern GPUs.
 
-  ---
+---
 
-  ## Why Texture Filtering Matters
+## Why Texture Filtering Matters
 
-  Without texture filtering, 3D graphics would look:
-  - **Pixelated** when zoomed in (blocky squares)
-  - **Aliased** (jagged edges) when viewed at angles
-  - **Distorted** when objects are far away
+Without texture filtering, 3D graphics would look:
 
-  ---
+- **Pixelated** when zoomed in (blocky squares)
+- **Aliased** (jagged edges) when viewed at angles
+- **Distorted** when objects are far away
 
-  ## The 4 Main Texture Filtering Methods
+---
 
-  | Method | Quality | Performance | How It Works |
-  |--------|---------|-------------|--------------|
-  | **Nearest Neighbor** | Low | Fastest | Uses the closest pixel (no blending) |
-  | **Bilinear** | Medium | Good | Averages 2x2 surrounding pixels |
-  | **Trilinear** | High | Heavy | Bilinear + MIPMAP blending |
-  | **Anisotropic** | Best | Most demanding | Accounts for viewing angle |
+## The 4 Main Texture Filtering Methods
 
-  ---
-
-  ## How Texture Filtering Works in the GPU Pipeline
-
-  ### Step 1: Texture Coordinates (UV Mapping)
-  Each 3D object has UV coordinates that map its surface to a 2D texture image.
-
-  ### Step 2: Pixel Mapping
-  The GPU calculates which texture pixels (texels) correspond to each screen pixel.
-
-  ### Step 3: Filtering Applied
-  - **Minification** (texture too small → stretched): Uses MIPMAPs
-  - **Magnification** (texture too big → zoomed in): Blends nearby texels
-
-  ### Step 4: Final Pixel Color
-  The filtered result is displayed on screen.
-
-  ---
-
-  ## Interactive Demo
-
-  Click the buttons below to see how different texture filtering methods look:
-
+<div class="table-wrapper">
+| Method | Quality | Performance | How It Works |
+|--------|---------|-------------|--------------|
+| **Nearest Neighbor** | Low | Fastest | Uses the closest pixel (no blending) |
+| **Bilinear** | Medium | Good | Averages 2x2 surrounding pixels |
+| **Trilinear** | High | Heavy | Bilinear + MIPMAP blending |
+| **Anisotropic** | Best | Most demanding | Accounts for viewing angle |
 </div>
+
+---
+
+## How Texture Filtering Works in the GPU Pipeline
+
+1. **Texture Coordinates (UV Mapping):** Each 3D object has UV coordinates that map its surface to a 2D texture image.
+2. **Pixel Mapping:** The GPU calculates which texture pixels (texels) correspond to each screen pixel.
+3. **Filtering Applied:** The GPU applies the selected filtering method to blend texels and produce the final pixel color.
+4. **Final Pixel Color:** The filtered result is displayed on screen.
+
+---
+
+## 🎨 Interactive Demo
+
+Click the buttons below to see how different texture filtering methods look:
 
 <TextureFilterDemo />
 
-<div class="prose prose-lg max-w-none">
+---
 
-  ---
+## MIPMAPs: The Performance Hack
 
-  ## MIPMAPs: The Performance Hack
+**MIPMAPs** are pre-scaled copies of a texture (like a pyramid). When an object is far away, the GPU uses the smaller version instead of shrinking the full texture.
 
-  **MIPMAPs** are pre-scaled copies of a texture (like a pyramid). When an object is far away, the GPU uses the smaller version instead of shrinking the full texture.
+This saves **75%+ memory bandwidth** and significantly speeds up rendering.
+
+---
+
+## GPU Hardware and Texture Filtering
+
+<div class="table-wrapper">
+| GPU Component | Role in Texture Filtering |
+|---------------|---------------------------|
+| **Texture Mapping Units (TMUs)** | Handle all texture operations |
+| **Texture Cache** | Stores recently used texels for speed |
+| **Memory Bandwidth** | Determines how fast textures load |
+| **Shader Cores** | Process pixel calculations |
+</div>
+
+---
+
+## Real-World Impact
+
+<div class="table-wrapper">
+| Application | Filtering Used | Why |
+|-------------|----------------|-----|
+| **Esports Games** | Trilinear | Speed + quality balance |
+| **AAA Games** | Anisotropic (8x-16x) | Best visual quality |
+| **VR/AR** | Anisotropic | Minimizes distortion |
+| **Mobile Games** | Bilinear | Performance focused |
+</div>
+
+---
+
+## Fun Facts
+
+- The PlayStation 1 used **nearest neighbor** filtering (blocky textures)
+- **Anisotropic filtering** was introduced in 1999 with the NVIDIA GeForce 256
+- Modern GPUs have **dedicated TMUs** that can process 100+ billion texels per second
+
+---
+
+## Learn More
+
+- [GPU Texture Filtering Explained (NVIDIA)](https://www.nvidia.com/en-us/geforce/news/texture-filtering/)
+- [MIPMAPs: Optimizing 3D Textures](https://developer.nvidia.com/gpugems/)
