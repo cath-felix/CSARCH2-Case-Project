@@ -103,6 +103,7 @@ This Virtual Exhibit demonstrates how the Texture Mapping Unit (TMU), a GPU hard
 
 ## V. Target Repository Structure
 
+```text
 csarch2-case-project
 ├── astro.config.mjs
 ├── package.json
@@ -118,6 +119,7 @@ csarch2-case-project
     │   └── index.mdx                # Main exhibit content / simulator component
     └── styles/
         └── global.css               # System directives for Tailwind utility injection
+```
 
 ## References
 
