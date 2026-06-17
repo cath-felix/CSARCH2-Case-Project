@@ -1,101 +1,143 @@
 ---
-title: "Texture Filtering in 3D: From Pixels to Reality"
+title: "How GPU Filter Textures: Nearest Neighbor vs Bilinear Filtering"
 layout: "../layouts/BaseLayout.astro"
 ---
 
 import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
 
-# 🎮 Texture Filtering in 3D: From Pixels to Reality
+# 🎮 How GPU Filter Textures: Nearest Neighbor vs Bilinear Filtering
 
 ## Introduction
 
-When you play a game or watch a 3D movie, textures (the images wrapped around 3D objects) need to be displayed correctly at various distances and angles. This process is called **texture filtering** — a critical function of modern GPUs.
+When a GPU renders a 3D scene, it needs to apply textures to objects. But what happens when a texture is viewed at different distances or angles? The GPU uses **texture filtering** to determine pixel colors — and two of the most fundamental methods are **Nearest Neighbor** and **Bilinear Filtering**.
 
 ---
 
-## Why Texture Filtering Matters
+## What is Texture Filtering?
 
-Without texture filtering, 3D graphics would look:
+Texture filtering is the process of **sampling a texture image** and calculating the correct color for each pixel on screen. It's a critical GPU function that affects:
 
-- **Pixelated** when zoomed in (blocky squares)
-- **Aliased** (jagged edges) when viewed at angles
-- **Distorted** when objects are far away
-
----
-
-## The 4 Main Texture Filtering Methods
-
-<div class="table-wrapper">
-| Method | Quality | Performance | How It Works |
-|--------|---------|-------------|--------------|
-| **Nearest Neighbor** | Low | Fastest | Uses the closest pixel (no blending) |
-| **Bilinear** | Medium | Good | Averages 2x2 surrounding pixels |
-| **Trilinear** | High | Heavy | Bilinear + MIPMAP blending |
-| **Anisotropic** | Best | Most demanding | Accounts for viewing angle |
-</div>
+- **Visual Quality** — sharp or blurry?
+- **Performance** — fast or slow?
+- **Memory Usage** — how much data is needed?
 
 ---
 
-## How Texture Filtering Works in the GPU Pipeline
+## The Problem: Pixels vs Texels
 
-1. **Texture Coordinates (UV Mapping):** Each 3D object has UV coordinates that map its surface to a 2D texture image.
-2. **Pixel Mapping:** The GPU calculates which texture pixels (texels) correspond to each screen pixel.
-3. **Filtering Applied:** The GPU applies the selected filtering method to blend texels and produce the final pixel color.
-4. **Final Pixel Color:** The filtered result is displayed on screen.
+| Term | Definition |
+|------|------------|
+| **Pixel** | A single dot on your screen |
+| **Texel** | A single dot in a texture image |
+| **The Problem** | 1 pixel doesn't always match 1 texel (especially when zooming) |
 
----
-
-## 🎨 Interactive Demo
-
-Click the buttons below to see how different texture filtering methods look:
-
-<TextureFilterDemo />
+When a texture is displayed larger or smaller than its original size, the GPU must **interpolate** (calculate) the missing pixels.
 
 ---
 
-## MIPMAPs: The Performance Hack
+## Nearest Neighbor Interpolation
 
-**MIPMAPs** are pre-scaled copies of a texture (like a pyramid). When an object is far away, the GPU uses the smaller version instead of shrinking the full texture.
+**How it works:** The GPU simply picks the closest texel to the sample point. No averaging, no blending.
 
-This saves **75%+ memory bandwidth** and significantly speeds up rendering.
+**Formula:** P(x,y) = P(round(x), round(y))
+
+### ✅ Advantages:
+- **Fastest** filtering method
+- Simple to implement
+- Preserves sharp edges
+
+### ❌ Disadvantages:
+- **Blocky**, pixelated appearance when zoomed in
+- Noticeable aliasing (jagged edges)
+- Poor quality for realistic images
+
+### 🎮 Where it's used:
+- Pixel art games (like Minecraft)
+- Retro-style games
+- Older hardware
 
 ---
 
-## GPU Hardware and Texture Filtering
+## Bilinear Filtering
 
-<div class="table-wrapper">
-| GPU Component | Role in Texture Filtering |
-|---------------|---------------------------|
-| **Texture Mapping Units (TMUs)** | Handle all texture operations |
-| **Texture Cache** | Stores recently used texels for speed |
-| **Memory Bandwidth** | Determines how fast textures load |
-| **Shader Cores** | Process pixel calculations |
-</div>
+**How it works:** The GPU averages the 4 nearest texels (a 2x2 grid) and blends them together.
+
+**Formula:** P(x,y) = (TL + TR + BL + BR) / 4
+
+### ✅ Advantages:
+- **Smooth** appearance
+- No obvious pixelation
+- Better visual quality
+
+### ❌ Disadvantages:
+- **Slower** than Nearest Neighbor
+- Can appear slightly blurry
+- Uses more GPU resources
+
+### 🎮 Where it's used:
+- Most modern games
+- 3D applications
+- Textures viewed at normal distances
 
 ---
 
-## Real-World Impact
+## 🔍 Interactive Demo
 
-<div class="table-wrapper">
-| Application | Filtering Used | Why |
-|-------------|----------------|-----|
-| **Esports Games** | Trilinear | Speed + quality balance |
-| **AAA Games** | Anisotropic (8x-16x) | Best visual quality |
-| **VR/AR** | Anisotropic | Minimizes distortion |
-| **Mobile Games** | Bilinear | Performance focused |
-</div>
+Click the toggle to switch between filtering modes. Use the slider to zoom in and see the difference!
+
+<TextureFilterDemo client:load />
+
+---
+
+## Comparison Table
+
+| Feature | Nearest Neighbor | Bilinear |
+|---------|------------------|----------|
+| **Quality** | Low (blocky) | Medium (smooth) |
+| **Performance** | Fastest | Good |
+| **GPU Usage** | Very Low | Low |
+| **Memory Usage** | None | None |
+| **Formula** | Closest texel | (TL + TR + BL + BR) / 4 |
+
+---
+
+## When to Use Each Method
+
+| Scenario | Recommended Method | Why |
+|----------|-------------------|-----|
+| **Pixel art games** | Nearest Neighbor | Preserves blocky aesthetic |
+| **Retro style games** | Nearest Neighbor | Authentic retro look |
+| **Modern 3D games** | Bilinear | Good balance of quality/speed |
+| **VR/AR applications** | Anisotropic | Best quality for angles |
+| **Mobile games** | Bilinear | Performance-focused |
+
+---
+
+## How This Works in the GPU Pipeline
+
+1. **Texture Loading** — GPU loads texture into memory
+2. **UV Mapping** — Texture coordinates are calculated
+3. **Sample Point** — GPU finds where to sample on texture
+4. **Filtering Applied** — Nearest or Bilinear (or other)
+5. **Pixel Output** — Final color is displayed on screen
 
 ---
 
 ## Fun Facts
 
-- The PlayStation 1 used **nearest neighbor** filtering (blocky textures)
-- **Anisotropic filtering** was introduced in 1999 with the NVIDIA GeForce 256
-- Modern GPUs have **dedicated TMUs** that can process 100+ billion texels per second
+- **Nearest Neighbor** was the default in early 3D games (like PlayStation 1)
+- **Bilinear** became popular with the PlayStation 2 era
+- Modern GPUs can process **100+ billion texels per second**
+- **Anisotropic** filtering (the next step up) was introduced in 1999 with NVIDIA GeForce 256
 
 ---
 
 ## Learn More
 
 - [GPU Texture Filtering Explained (NVIDIA)](https://www.nvidia.com/en-us/geforce/news/texture-filtering/)
-- [MIPMAPs: Optimizing 3D Textures](https://developer.nvidia.com/gpugems/)
+- [Wikipedia: Texture Filtering](https://en.wikipedia.org/wiki/Texture_filtering)
+- [Bilinear vs Nearest Neighbor Comparison](https://www.reddit.com/r/gamedev/comments/4bs0x5/nearest_neighbor_vs_bilinear_texture_filtering/)
+
+---
+
+*Computer Architecture is Forever | Virtual Museum Exhibit 2026*
