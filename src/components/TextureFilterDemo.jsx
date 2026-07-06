@@ -1,16 +1,25 @@
 // src/components/TextureFilterDemo.jsx
 import { useState } from 'react';
 
+// Fixed virtual texture resolution (like a real 16x16 sprite asset in VRAM)
+const TEXTURE_RES = 16;
+// Fixed number of screen-space sample cells we draw, independent of zoom.
+// This is what lets the demo stay smooth all the way to 32x instead of
+// freezing once the old gridSize cap kicked in.
+const SCREEN_RES = 48;
+// Static viewport box size on the page (no more shrinking/growing with zoom)
+const VIEWPORT_SIZE = 400;
+
 export default function TextureFilterDemo() {
   // Only 2 modes: Nearest and Bilinear
   const MODES = [
-    { id: 'nearest', label: 'Nearest Neighbor', emoji: '🧊', 
-      description: 'Uses closest pixel only — fast but blocky',
-      formula: 'P(x,y) = P(round(x), round(y))',
+    { id: 'nearest', label: 'Nearest Neighbor', emoji: '🧊',
+      description: 'Uses closest texel only — fast but blocky',
+      formula: 'texel = T[round(u), round(v)]',
       performance: '⚡ Fastest (1x)' },
-    { id: 'bilinear', label: 'Bilinear', emoji: '🌊', 
-      description: 'Averages 2x2 surrounding pixels — smooth but blurry',
-      formula: 'P(x,y) = (TL + TR + BL + BR) / 4',
+    { id: 'bilinear', label: 'Bilinear', emoji: '🌊',
+      description: 'Blends the 4 nearest texels — smooth but blurry',
+      formula: 'texel = lerp(lerp(T00,T10,fx), lerp(T01,T11,fx), fy)',
       performance: '⚡ Good (2x)' },
   ];
 
@@ -18,7 +27,7 @@ export default function TextureFilterDemo() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [messages, setMessages] = useState([
     { id: 1, text: '👋 Welcome to the Texture Explorer!', type: 'info' },
-    { id: 2, text: '🔍 Use the slider to zoom in on the pattern', type: 'info' },
+    { id: 2, text: '🔍 Use the slider to zoom into a fixed 16×16 texture', type: 'info' },
     { id: 3, text: '🔄 Click the toggle to switch between Nearest and Bilinear', type: 'info' },
     { id: 4, text: '📌 Current mode: 🌊 Bilinear — smooth but blurry', type: 'info' },
   ]);
@@ -34,74 +43,127 @@ export default function TextureFilterDemo() {
     addMessage(`📐 Formula: ${mode.formula}`, 'info');
   };
 
-  // Generate texture with different filtering effects
+  // ---- Texel color generators (operate on integer texel coords 0..TEXTURE_RES-1) ----
+
+  const isTextTexel = (tx, ty) => {
+    const lo = TEXTURE_RES / 4;
+    const hi = TEXTURE_RES * 0.75;
+    return tx >= lo && tx < hi && ty >= lo && ty < hi;
+  };
+
+  const isRingTexel = (tx, ty) => {
+    const centerX = TEXTURE_RES / 2;
+    const centerY = TEXTURE_RES / 2;
+    const dist = Math.sqrt((tx - centerX) ** 2 + (ty - centerY) ** 2);
+    const maxDist = TEXTURE_RES / 2;
+    return Math.floor((dist / maxDist) * 4) % 2 === 0;
+  };
+
+  // Sharp, discrete palette used by Nearest Neighbor
+  const nearestColorHex = (tx, ty) => {
+    const isEven = (tx + ty) % 2 === 0;
+    const isText = isTextTexel(tx, ty);
+    const ring = isRingTexel(tx, ty);
+    if (isText && isEven) return '#e74c3c';
+    if (isText) return '#2ecc71';
+    if (ring) return '#3498db';
+    if (isEven) return '#2c3e50';
+    return '#ecf0f1';
+  };
+
+  // Continuous-valued color used by Bilinear (so adjacent texels can be blended)
+  const bilinearColorRGB = (tx, ty) => {
+    const isText = isTextTexel(tx, ty);
+    const blendX = Math.sin((tx / TEXTURE_RES) * Math.PI * 2) * 0.5 + 0.5;
+    const blendY = Math.cos((ty / TEXTURE_RES) * Math.PI * 2) * 0.5 + 0.5;
+    const r = (80 + blendX * 120 + (isText ? 60 : 0)) % 255;
+    const g = (60 + blendY * 100 + (isText ? 60 : 0)) % 255;
+    const b = (180 - blendX * 80 + 255) % 255;
+    return { r, g, b };
+  };
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  // Generate the texture view via true UV sampling into a fixed TEXTURE_RES texture.
+  // The zoom slider only changes how many texels are visible (the UV window),
+  // never the loop bounds — that's what removes the 6.5x freeze.
   const renderTexture = () => {
-    const size = Math.min(400, 180 * Math.sqrt(zoomLevel));
-    const gridSize = Math.max(4, Math.min(20, Math.floor(8 * Math.sqrt(zoomLevel))));
+    const cellSize = VIEWPORT_SIZE / SCREEN_RES;
+    const visibleTexels = TEXTURE_RES / zoomLevel; // shrinks as zoom increases
+    const centerU = TEXTURE_RES / 2;
+    const centerV = TEXTURE_RES / 2;
+    const mode = currentMode.id;
     const pixels = [];
-    
-    // Create a pattern with hidden letters
-    const letters = 'GPU'.split('');
-    
-    for (let y = 0; y < gridSize; y++) {
-      for (let x = 0; x < gridSize; x++) {
-        const isEven = (x + y) % 2 === 0;
-        const isText = (x >= gridSize/4 && x < gridSize*0.75 && y >= gridSize/4 && y < gridSize*0.75);
-        const centerX = gridSize/2;
-        const centerY = gridSize/2;
-        const dist = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
-        const maxDist = gridSize/2;
-        const ring = Math.floor((dist / maxDist) * 4) % 2 === 0;
-        
+
+    for (let sy = 0; sy < SCREEN_RES; sy++) {
+      for (let sx = 0; sx < SCREEN_RES; sx++) {
+        // Map this screen cell to a continuous texture coordinate (u, v)
+        const u = centerU - visibleTexels / 2 + ((sx + 0.5) / SCREEN_RES) * visibleTexels;
+        const v = centerV - visibleTexels / 2 + ((sy + 0.5) / SCREEN_RES) * visibleTexels;
+
         let color;
-        const mode = currentMode.id;
-        
+
         if (mode === 'nearest') {
-          // Nearest Neighbor — sharp, blocky
-          if (isText && isEven) color = '#e74c3c';
-          else if (isText) color = '#2ecc71';
-          else if (ring) color = '#3498db';
-          else if (isEven) color = '#2c3e50';
-          else color = '#ecf0f1';
+          const tx = clamp(Math.floor(u), 0, TEXTURE_RES - 1);
+          const ty = clamp(Math.floor(v), 0, TEXTURE_RES - 1);
+          color = nearestColorHex(tx, ty);
         } else {
-          // Bilinear — smooth, blended
-          const blendX = Math.sin(x / gridSize * Math.PI * 2) * 0.5 + 0.5;
-          const blendY = Math.cos(y / gridSize * Math.PI * 2) * 0.5 + 0.5;
-          const r = Math.floor(80 + blendX * 120 + (isText ? 60 : 0));
-          const g = Math.floor(60 + blendY * 100 + (isText ? 60 : 0));
-          const b = Math.floor(180 - blendX * 80);
-          color = `rgb(${r % 255}, ${g % 255}, ${b % 255})`;
+          const tx0 = clamp(Math.floor(u), 0, TEXTURE_RES - 1);
+          const ty0 = clamp(Math.floor(v), 0, TEXTURE_RES - 1);
+          const tx1 = clamp(tx0 + 1, 0, TEXTURE_RES - 1);
+          const ty1 = clamp(ty0 + 1, 0, TEXTURE_RES - 1);
+          const fx = clamp(u - Math.floor(u), 0, 1);
+          const fy = clamp(v - Math.floor(v), 0, 1);
+
+          const c00 = bilinearColorRGB(tx0, ty0);
+          const c10 = bilinearColorRGB(tx1, ty0);
+          const c01 = bilinearColorRGB(tx0, ty1);
+          const c11 = bilinearColorRGB(tx1, ty1);
+
+          const top = {
+            r: lerp(c00.r, c10.r, fx),
+            g: lerp(c00.g, c10.g, fx),
+            b: lerp(c00.b, c10.b, fx),
+          };
+          const bottom = {
+            r: lerp(c01.r, c11.r, fx),
+            g: lerp(c01.g, c11.g, fx),
+            b: lerp(c01.b, c11.b, fx),
+          };
+          const final = {
+            r: Math.round(lerp(top.r, bottom.r, fy)),
+            g: Math.round(lerp(top.g, bottom.g, fy)),
+            b: Math.round(lerp(top.b, bottom.b, fy)),
+          };
+          color = `rgb(${final.r}, ${final.g}, ${final.b})`;
         }
-        
-        const sizePerCell = size / gridSize;
+
         pixels.push(
           <rect
-            key={`${x}-${y}`}
-            x={x * sizePerCell}
-            y={y * sizePerCell}
-            width={sizePerCell}
-            height={sizePerCell}
+            key={`${sx}-${sy}`}
+            x={sx * cellSize}
+            y={sy * cellSize}
+            width={cellSize}
+            height={cellSize}
             fill={color}
-            stroke={mode === 'nearest' ? '#1a1a2e' : 'none'}
-            strokeWidth="0.5"
           />
         );
       }
     }
-    
+
     return (
       <div style={{ position: 'relative', display: 'inline-block' }}>
-        <svg 
-          width={size} 
-          height={size} 
-          style={{ 
-            border: '4px solid #2d3436', 
-            borderRadius: '12px', 
-            display: 'block', 
+        <svg
+          width={VIEWPORT_SIZE}
+          height={VIEWPORT_SIZE}
+          style={{
+            border: '4px solid #2d3436',
+            borderRadius: '12px',
+            display: 'block',
             margin: '0 auto',
             backgroundColor: '#1a1a2e',
             boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-            transition: 'all 0.3s ease'
           }}
         >
           {pixels}
@@ -117,7 +179,7 @@ export default function TextureFilterDemo() {
           fontSize: '0.75rem',
           fontFamily: 'monospace'
         }}>
-          🔍 {zoomLevel}x | {currentMode.label}
+          🔍 {zoomLevel}x | {currentMode.label} | {visibleTexels.toFixed(2)} texels visible
         </div>
       </div>
     );
@@ -130,7 +192,7 @@ export default function TextureFilterDemo() {
   const handleZoom = (e) => {
     const newZoom = parseFloat(e.target.value);
     setZoomLevel(newZoom);
-    
+
     if (newZoom === 1) {
       addMessage('🔍 Zoom: 1x — Compare the two methods!', 'info');
     } else if (newZoom >= 4 && newZoom < 8) {
@@ -146,7 +208,7 @@ export default function TextureFilterDemo() {
     e.preventDefault();
     if (input.trim()) {
       const cmd = input.trim().toLowerCase();
-      
+
       if (cmd === 'help') {
         addMessage('📋 Commands:', 'info');
         addMessage('  help - Show this menu', 'info');
@@ -172,8 +234,8 @@ export default function TextureFilterDemo() {
         toggleMode();
       } else if (cmd === 'compare') {
         addMessage('📊 Comparison:', 'info');
-        addMessage('  🧊 Nearest: Fast, blocky, uses closest pixel', 'info');
-        addMessage('  🌊 Bilinear: Smooth, blends 2x2 pixels', 'info');
+        addMessage('  🧊 Nearest: Fast, blocky, uses closest texel', 'info');
+        addMessage('  🌊 Bilinear: Smooth, blends 4 neighboring texels', 'info');
         addMessage('  💡 Tip: Zoom in to see the difference clearly!', 'info');
       } else if (cmd === 'formula') {
         addMessage(`📐 Formula: ${currentMode.formula}`, 'info');
@@ -198,12 +260,12 @@ export default function TextureFilterDemo() {
         border: '1px solid #dee2e6'
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
+
           {/* Title */}
           <div>
             <h3 style={{ margin: 0, fontSize: '1.3rem' }}>🔍 Texture Explorer</h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.9rem', color: '#6c757d' }}>
-              Compare Nearest Neighbor vs Bilinear Filtering
+              Compare Nearest Neighbor vs Bilinear Filtering on a 16×16 texture
             </p>
           </div>
 
@@ -211,10 +273,10 @@ export default function TextureFilterDemo() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>1x</span>
-              <span style={{ 
-                backgroundColor: '#6c5ce7', 
-                color: 'white', 
-                padding: '2px 16px', 
+              <span style={{
+                backgroundColor: '#6c5ce7',
+                color: 'white',
+                padding: '2px 16px',
                 borderRadius: '12px',
                 fontSize: '0.9rem',
                 fontWeight: '700'
@@ -243,9 +305,9 @@ export default function TextureFilterDemo() {
           </div>
 
           {/* ===== TOGGLE / SWITCH ===== */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '16px',
             flexWrap: 'wrap',
             padding: '12px 16px',
@@ -254,7 +316,7 @@ export default function TextureFilterDemo() {
             border: '1px solid #dee2e6'
           }}>
             <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>🔄 Compare:</span>
-            
+
             <label style={{
               position: 'relative',
               display: 'inline-block',
@@ -294,17 +356,17 @@ export default function TextureFilterDemo() {
               </span>
             </label>
 
-            <span style={{ 
-              fontWeight: '700', 
+            <span style={{
+              fontWeight: '700',
               fontSize: '1rem',
               minWidth: '130px',
               color: currentModeIndex === 0 ? '#e17055' : '#6c5ce7'
             }}>
               {currentMode.emoji} {currentMode.label}
             </span>
-            
-            <span style={{ 
-              fontSize: '0.8rem', 
+
+            <span style={{
+              fontSize: '0.8rem',
               color: '#6c757d',
               backgroundColor: '#f8f9fa',
               padding: '2px 12px',
@@ -395,7 +457,7 @@ export default function TextureFilterDemo() {
           <span style={{ color: '#a0a0b0', fontSize: '0.75rem', fontFamily: 'monospace' }}>
             📝 Activity Log
           </span>
-          <button 
+          <button
             onClick={() => setMessages([])}
             style={{
               marginLeft: 'auto',
@@ -426,7 +488,7 @@ export default function TextureFilterDemo() {
           lineHeight: '1.8'
         }}>
           {messages.map((msg) => (
-            <div key={msg.id} style={{ 
+            <div key={msg.id} style={{
               display: 'flex',
               gap: '10px',
               padding: '1px 0',
@@ -515,8 +577,8 @@ export default function TextureFilterDemo() {
                 backgroundColor: isActive ? (isNearest ? '#fff3e0' : '#e3f2fd') : '#f8f9fa',
                 transition: 'all 0.3s'
               }}>
-                <div style={{ 
-                  fontWeight: '700', 
+                <div style={{
+                  fontWeight: '700',
                   fontSize: '1rem',
                   color: isNearest ? '#e17055' : '#6c5ce7'
                 }}>
@@ -527,9 +589,9 @@ export default function TextureFilterDemo() {
                 <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', marginTop: '4px' }}>
                   {mode.formula}
                 </div>
-                <div style={{ 
-                  fontSize: '0.7rem', 
-                  fontWeight: '600', 
+                <div style={{
+                  fontSize: '0.7rem',
+                  fontWeight: '600',
                   marginTop: '4px',
                   color: isNearest ? '#00b894' : '#6c5ce7'
                 }}>
@@ -551,7 +613,7 @@ export default function TextureFilterDemo() {
         color: '#856404',
         marginTop: '12px'
       }}>
-        💡 <strong>Tips:</strong> Click the toggle to switch between Nearest Neighbor and Bilinear! 
+        💡 <strong>Tips:</strong> Click the toggle to switch between Nearest Neighbor and Bilinear!
         Zoom in to see the difference clearly. Type <strong>help</strong> in the console for commands.
         Try typing <strong>compare</strong> for more info!
       </div>
