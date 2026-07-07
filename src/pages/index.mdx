@@ -38,11 +38,13 @@ import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
     <div class="exhibit-panel__body">
       <div class="exhibit-panel__text">
         <p>
-          Texture filtering is the process of <strong>sampling a texture image</strong> and calculating the correct color for each pixel on screen. It is a critical GPU function that affects visual quality, performance, and memory usage.
+          Texture filtering is the process of <strong>sampling a texture image</strong> and calculating the correct color for each pixel on screen. It's a critical GPU function that affects:
         </p>
-        <p>
-          When a coordinate does not lie on texel centers, the Texture Mapping Unit (TMU) must interpolate color values — often while fetching texels from cache and VRAM.
-        </p>
+        <ul>
+          <li><strong>Visual Quality</strong> — sharp or blurry?</li>
+          <li><strong>Performance</strong> — fast or slow?</li>
+          <li><strong>Memory Usage</strong> — how much data is needed?</li>
+        </ul>
       </div>
       <figure class="exhibit-figure">
         <img
@@ -61,11 +63,15 @@ import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
     <h2>Pixels vs. Texels</h2>
     <div class="exhibit-panel__body exhibit-panel__body--stacked">
       <div class="exhibit-panel__text">
+        <div class="table-wrapper">
+          | Term | Definition |
+          |------|------------|
+          | **Pixel** | A single dot on your screen |
+          | **Texel** | A single dot in a texture image |
+          | **The Problem** | 1 pixel doesn't always match 1 texel (especially when zooming) |
+        </div>
         <p>
-          A <strong>pixel</strong> is a single dot on your screen. A <strong>texel</strong> is a single dot in a texture image. One screen pixel does not always map to one texel — especially when zooming or viewing surfaces at an angle.
-        </p>
-        <p>
-          When a texture is displayed larger or smaller than its original size, the GPU must <strong>interpolate</strong> to calculate missing pixel colors.
+          When a texture is displayed larger or smaller than its original size, the GPU must <strong>interpolate</strong> (calculate) the missing pixels.
         </p>
       </div>
       <div class="exhibit-panel__figures">
@@ -97,9 +103,12 @@ import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
 <div class="exhibit-divider"></div>
 
 <section class="exhibit-section exhibit-nearest">
-  <h2>Nearest Neighbor Filtering</h2>
+  <h2>Nearest Neighbor Interpolation</h2>
   <p class="exhibit-lead">
-    The GPU picks the closest texel to the sample point. No averaging, no blending. Formula: <code>P(x,y) = P(round(x), round(y))</code>
+    <strong>How it works:</strong> The GPU simply picks the closest texel to the sample point. No averaging, no blending.
+  </p>
+  <p class="exhibit-lead">
+    <strong>Formula:</strong> <code>P(x,y) = P(round(x), round(y))</code>
   </p>
 
   <div class="exhibit-pros-cons">
@@ -121,6 +130,13 @@ import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
     </div>
   </div>
 
+  <h3>Where it's used</h3>
+  <ul>
+    <li>Pixel art games (like Minecraft)</li>
+    <li>Retro-style games</li>
+    <li>Older hardware</li>
+  </ul>
+
   <figure class="exhibit-figure exhibit-figure--wide">
     <img
       src="/images/nearest-neighbor.png"
@@ -140,15 +156,36 @@ import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
   <div class="exhibit-bilinear-grid">
     <div class="exhibit-bilinear-text">
       <p>
-        The GPU averages the four nearest texels (a 2×2 grid) and blends them together. Formula: <code>P(x,y) = lerp(lerp(T00,T10,fx), lerp(T01,T11,fx), fy)</code>
+        <strong>How it works:</strong> The GPU averages the 4 nearest texels (a 2×2 grid) and blends them together.
       </p>
       <p>
-        Bilinear filtering is more accurate and more common in modern graphics hardware. It produces smoother gradients than nearest neighbor, though textures can appear slightly blurry when magnified.
+        <strong>Formula:</strong> <code>P(x,y) = (TL + TR + BL + BR) / 4</code>
       </p>
+
+      <div class="exhibit-pros-cons">
+        <div class="exhibit-pros-cons__col">
+          <h3>Advantages</h3>
+          <ul>
+            <li><strong>Smooth</strong> appearance</li>
+            <li>No obvious pixelation</li>
+            <li>Better visual quality</li>
+          </ul>
+        </div>
+        <div class="exhibit-pros-cons__col">
+          <h3>Disadvantages</h3>
+          <ul>
+            <li><strong>Slower</strong> than Nearest Neighbor</li>
+            <li>Can appear slightly blurry</li>
+            <li>Uses more GPU resources</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Where it's used</h3>
       <ul>
-        <li><strong>Smooth</strong> appearance with no obvious pixelation</li>
-        <li>Slower than nearest neighbor, but still hardware-accelerated</li>
-        <li>Used in most modern games and 3D applications</li>
+        <li>Most modern games</li>
+        <li>3D applications</li>
+        <li>Textures viewed at normal distances</li>
       </ul>
     </div>
     <figure class="exhibit-figure">
@@ -186,7 +223,8 @@ import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
 | **Quality** | Low (blocky) | Medium (smooth) |
 | **Performance** | Fastest | Good |
 | **GPU Usage** | Very Low | Low |
-| **Formula** | Closest texel | Blend of 4 texels |
+| **Memory Usage** | None | None |
+| **Formula** | Closest texel | (TL + TR + BL + BR) / 4 |
 
   <h2>When to Use Each Method</h2>
 
@@ -198,10 +236,29 @@ import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
 | **VR/AR applications** | Anisotropic | Best quality for angles |
 | **Mobile games** | Bilinear | Performance-focused |
 
+  <h2>How This Works in the GPU Pipeline</h2>
+  <ol>
+    <li><strong>Texture Loading</strong> — GPU loads texture into memory</li>
+    <li><strong>UV Mapping</strong> — Texture coordinates are calculated</li>
+    <li><strong>Sample Point</strong> — GPU finds where to sample on texture</li>
+    <li><strong>Filtering Applied</strong> — Nearest or Bilinear (or other)</li>
+    <li><strong>Pixel Output</strong> — Final color is displayed on screen</li>
+  </ol>
+
+  <h2>Fun Facts</h2>
+  <ul>
+    <li><strong>Nearest Neighbor</strong> was the default in early 3D games (like PlayStation 1)</li>
+    <li><strong>Bilinear</strong> became popular with the PlayStation 2 era</li>
+    <li>Modern GPUs can process <strong>100+ billion texels per second</strong></li>
+    <li><strong>Anisotropic</strong> filtering (the next step up) was introduced in 1999 with NVIDIA GeForce 256</li>
+  </ul>
+
   <h2>Learn More</h2>
   <ul>
+    <li><a href="https://www.nvidia.com/en-us/geforce/news/texture-filtering/">GPU Texture Filtering Explained (NVIDIA)</a></li>
     <li><a href="https://en.wikipedia.org/wiki/Texture_filtering">Wikipedia: Texture Filtering</a></li>
     <li><a href="https://developer.arm.com/documentation/102449/0200/Texture-filtering">Arm Developer: Texture Filtering</a></li>
     <li><a href="https://learn.microsoft.com/en-us/windows/uwp/graphics-concepts/bilinear-texture-filtering">Microsoft Learn: Bilinear Texture Filtering</a></li>
+    <li><a href="https://www.reddit.com/r/gamedev/comments/4bs0x5/nearest_neighbor_vs_bilinear_texture_filtering/">Bilinear vs Nearest Neighbor Comparison (Reddit)</a></li>
   </ul>
 </section>
