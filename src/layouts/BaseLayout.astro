@@ -17,12 +17,11 @@ const { title } = Astro.props;
     <title>{title} | Texture Filtering Exhibit</title>
   </head>
   <body>
-    <div class="container">
-      <header class="site-header">
-        <h1>Computer Architecture Virtual Exhibit</h1>
-        <p class="subtitle">CSARCH2-S40 &mdash; GPU Texture Filtering</p>
-      </header>
+    <div class="exhibit-topbar">
+      <span>Computer Architecture Virtual Exhibit</span>
+    </div>
 
+    <div class="container exhibit-container">
       <main>
         <slot />
       </main>

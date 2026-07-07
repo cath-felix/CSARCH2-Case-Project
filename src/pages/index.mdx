@@ -5,103 +5,190 @@ layout: "../layouts/BaseLayout.astro"
 
 import TextureFilterDemo from '../components/TextureFilterDemo.jsx';
 
-# 🎮 How GPU Filter Textures: Nearest Neighbor vs Bilinear Filtering
+<div class="exhibit-hero">
+  <img
+    class="hero-decoration hero-decoration--tl"
+    src="/images/Untitled%20design%20(47).png"
+    alt=""
+    aria-hidden="true"
+  />
+  <img
+    class="hero-decoration hero-decoration--mr"
+    src="/images/Untitled%20design%20(47).png"
+    alt=""
+    aria-hidden="true"
+  />
+  <h1 class="hero-title">How GPU Filters Textures: Nearest Neighbor vs Bilinear Filtering</h1>
+</div>
 
-## Introduction
+<div class="exhibit-divider"></div>
 
-When a GPU renders a 3D scene, it needs to apply textures to objects. But what happens when a texture is viewed at different distances or angles? The GPU uses **texture filtering** to determine pixel colors — and two of the most fundamental methods are **Nearest Neighbor** and **Bilinear Filtering**.
+<section class="exhibit-section exhibit-intro">
+  <h2>Introduction</h2>
+  <p>
+    When a GPU renders a 3D scene, it needs to apply textures to objects. But what happens when a texture is viewed at different distances or angles? The GPU uses <strong>texture filtering</strong> to determine pixel colors — and two of the most fundamental methods are <strong>Nearest Neighbor</strong> and <strong>Bilinear Filtering</strong>.
+  </p>
+</section>
 
----
+<div class="exhibit-divider"></div>
 
-## What is Texture Filtering?
+<div class="exhibit-two-col">
+  <section class="exhibit-panel exhibit-panel--dark">
+    <h2>What is Texture Filtering?</h2>
+    <div class="exhibit-panel__body">
+      <div class="exhibit-panel__text">
+        <p>
+          Texture filtering is the process of <strong>sampling a texture image</strong> and calculating the correct color for each pixel on screen. It is a critical GPU function that affects visual quality, performance, and memory usage.
+        </p>
+        <p>
+          When a coordinate does not lie on texel centers, the Texture Mapping Unit (TMU) must interpolate color values — often while fetching texels from cache and VRAM.
+        </p>
+      </div>
+      <figure class="exhibit-figure">
+        <img
+          src="https://connect-mediagw.unity.com/h1/20200930/learn/images/857e9f75-ab5b-4961-88d1-8935e17822e9_image.png"
+          alt="Side-by-side comparison of nearest/point filtering versus bilinear texture filtering on a 3D scene"
+          loading="lazy"
+        />
+        <figcaption>
+          Nearest/point vs. bilinear filtering. Image: <a href="https://learn.unity.com/course/textures/tutorial/texture-filtering-1387?version=2019.4">Unity Learn</a>.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
 
-Texture filtering is the process of **sampling a texture image** and calculating the correct color for each pixel on screen. It's a critical GPU function that affects:
+  <section class="exhibit-panel exhibit-panel--navy">
+    <h2>Pixels vs. Texels</h2>
+    <div class="exhibit-panel__body exhibit-panel__body--stacked">
+      <div class="exhibit-panel__text">
+        <p>
+          A <strong>pixel</strong> is a single dot on your screen. A <strong>texel</strong> is a single dot in a texture image. One screen pixel does not always map to one texel — especially when zooming or viewing surfaces at an angle.
+        </p>
+        <p>
+          When a texture is displayed larger or smaller than its original size, the GPU must <strong>interpolate</strong> to calculate missing pixel colors.
+        </p>
+      </div>
+      <div class="exhibit-panel__figures">
+        <figure class="exhibit-figure exhibit-figure--small">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/2/2b/Pixel-example.png"
+            alt="Zoomed view of an image showing individual square pixels"
+            loading="lazy"
+          />
+          <figcaption>
+            <strong>Pixel</strong> — a screen dot magnified to show its square structure. Image: <a href="https://commons.wikimedia.org/w/index.php?curid=807503">ed g2s</a> (rendering of <a href="https://commons.wikimedia.org/wiki/File:Personal_computer,_exploded_5.svg">Personal computer, exploded 5.svg</a>), CC BY-SA 3.0.
+          </figcaption>
+        </figure>
+        <figure class="exhibit-figure exhibit-figure--small">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/f/f2/VoronoiPolygons.jpg"
+            alt="Grid of polygon cells representing discrete texture sample regions"
+            loading="lazy"
+          />
+          <figcaption>
+            <strong>Texel</strong> — discrete cells in a texture map. Image: <a href="https://commons.wikimedia.org/w/index.php?curid=10489724">Kmk35</a>, CC0.
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+</div>
 
-- **Visual Quality** — sharp or blurry?
-- **Performance** — fast or slow?
-- **Memory Usage** — how much data is needed?
+<div class="exhibit-divider"></div>
 
----
+<section class="exhibit-section exhibit-nearest">
+  <h2>Nearest Neighbor Filtering</h2>
+  <p class="exhibit-lead">
+    The GPU picks the closest texel to the sample point. No averaging, no blending. Formula: <code>P(x,y) = P(round(x), round(y))</code>
+  </p>
 
-## The Problem: Pixels vs Texels
+  <div class="exhibit-pros-cons">
+    <div class="exhibit-pros-cons__col">
+      <h3>Advantages</h3>
+      <ul>
+        <li><strong>Fastest</strong> filtering method</li>
+        <li>Simple to implement</li>
+        <li>Preserves sharp edges</li>
+      </ul>
+    </div>
+    <div class="exhibit-pros-cons__col">
+      <h3>Disadvantages</h3>
+      <ul>
+        <li><strong>Blocky</strong>, pixelated appearance when zoomed in</li>
+        <li>Noticeable aliasing (jagged edges)</li>
+        <li>Poor quality for realistic images</li>
+      </ul>
+    </div>
+  </div>
 
-| Term | Definition |
-|------|------------|
-| **Pixel** | A single dot on your screen |
-| **Texel** | A single dot in a texture image |
-| **The Problem** | 1 pixel doesn't always match 1 texel (especially when zooming) |
+  <figure class="exhibit-figure exhibit-figure--wide">
+    <img
+      src="/images/nearest-neighbor.png"
+      alt="Image resampling using nearest neighbor interpolation showing blocky pixel enlargement"
+      loading="lazy"
+    />
+    <figcaption>
+      Nearest-neighbor resampling produces hard, stair-stepped edges when magnified. Image: <a href="https://commons.wikimedia.org/wiki/File:Resize_nearest_neighbor.png">Grap-wh</a>, Wikimedia Commons.
+    </figcaption>
+  </figure>
+</section>
 
-When a texture is displayed larger or smaller than its original size, the GPU must **interpolate** (calculate) the missing pixels.
+<div class="exhibit-divider"></div>
 
----
+<section class="exhibit-section exhibit-bilinear">
+  <h2>Bilinear Filtering</h2>
+  <div class="exhibit-bilinear-grid">
+    <div class="exhibit-bilinear-text">
+      <p>
+        The GPU averages the four nearest texels (a 2×2 grid) and blends them together. Formula: <code>P(x,y) = lerp(lerp(T00,T10,fx), lerp(T01,T11,fx), fy)</code>
+      </p>
+      <p>
+        Bilinear filtering is more accurate and more common in modern graphics hardware. It produces smoother gradients than nearest neighbor, though textures can appear slightly blurry when magnified.
+      </p>
+      <ul>
+        <li><strong>Smooth</strong> appearance with no obvious pixelation</li>
+        <li>Slower than nearest neighbor, but still hardware-accelerated</li>
+        <li>Used in most modern games and 3D applications</li>
+      </ul>
+    </div>
+    <figure class="exhibit-figure">
+      <img
+        src="https://upload.wikimedia.org/wikipedia/commons/d/dd/Interpolation-bilinear.svg"
+        alt="Illustration of bilinear interpolation blending four neighboring texel samples"
+        loading="lazy"
+      />
+      <figcaption>
+        Bilinear interpolation blends four neighboring samples. Image: <a href="https://commons.wikimedia.org/wiki/File:Interpolation-bilinear.svg">Zykure</a>, CC BY-SA 4.0.
+      </figcaption>
+    </figure>
+  </div>
+</section>
 
-## Nearest Neighbor Interpolation
+<div class="exhibit-divider"></div>
 
-**How it works:** The GPU simply picks the closest texel to the sample point. No averaging, no blending.
+<section class="exhibit-section exhibit-demo">
+  <h2>Interactive Demo</h2>
+  <p class="exhibit-demo-intro">
+    Click the toggle to switch between filtering modes. Use the slider to zoom in and see the difference!
+  </p>
+  <div class="exhibit-demo-box">
+    <TextureFilterDemo client:load />
+  </div>
+</section>
 
-**Formula:** P(x,y) = P(round(x), round(y))
+<div class="exhibit-divider"></div>
 
-### ✅ Advantages:
-- **Fastest** filtering method
-- Simple to implement
-- Preserves sharp edges
-
-### ❌ Disadvantages:
-- **Blocky**, pixelated appearance when zoomed in
-- Noticeable aliasing (jagged edges)
-- Poor quality for realistic images
-
-### 🎮 Where it's used:
-- Pixel art games (like Minecraft)
-- Retro-style games
-- Older hardware
-
----
-
-## Bilinear Filtering
-
-**How it works:** The GPU averages the 4 nearest texels (a 2x2 grid) and blends them together.
-
-**Formula:** P(x,y) = (TL + TR + BL + BR) / 4
-
-### ✅ Advantages:
-- **Smooth** appearance
-- No obvious pixelation
-- Better visual quality
-
-### ❌ Disadvantages:
-- **Slower** than Nearest Neighbor
-- Can appear slightly blurry
-- Uses more GPU resources
-
-### 🎮 Where it's used:
-- Most modern games
-- 3D applications
-- Textures viewed at normal distances
-
----
-
-## 🔍 Interactive Demo
-
-Click the toggle to switch between filtering modes. Use the slider to zoom in and see the difference!
-
-<TextureFilterDemo client:load />
-
----
-
-## Comparison Table
+<section class="exhibit-section exhibit-supplementary">
+  <h2>Comparison Table</h2>
 
 | Feature | Nearest Neighbor | Bilinear |
 |---------|------------------|----------|
 | **Quality** | Low (blocky) | Medium (smooth) |
 | **Performance** | Fastest | Good |
 | **GPU Usage** | Very Low | Low |
-| **Memory Usage** | None | None |
-| **Formula** | Closest texel | (TL + TR + BL + BR) / 4 |
+| **Formula** | Closest texel | Blend of 4 texels |
 
----
-
-## When to Use Each Method
+  <h2>When to Use Each Method</h2>
 
 | Scenario | Recommended Method | Why |
 |----------|-------------------|-----|
@@ -111,33 +198,10 @@ Click the toggle to switch between filtering modes. Use the slider to zoom in an
 | **VR/AR applications** | Anisotropic | Best quality for angles |
 | **Mobile games** | Bilinear | Performance-focused |
 
----
-
-## How This Works in the GPU Pipeline
-
-1. **Texture Loading** — GPU loads texture into memory
-2. **UV Mapping** — Texture coordinates are calculated
-3. **Sample Point** — GPU finds where to sample on texture
-4. **Filtering Applied** — Nearest or Bilinear (or other)
-5. **Pixel Output** — Final color is displayed on screen
-
----
-
-## Fun Facts
-
-- **Nearest Neighbor** was the default in early 3D games (like PlayStation 1)
-- **Bilinear** became popular with the PlayStation 2 era
-- Modern GPUs can process **100+ billion texels per second**
-- **Anisotropic** filtering (the next step up) was introduced in 1999 with NVIDIA GeForce 256
-
----
-
-## Learn More
-
-- [GPU Texture Filtering Explained (NVIDIA)](https://www.nvidia.com/en-us/geforce/news/texture-filtering/)
-- [Wikipedia: Texture Filtering](https://en.wikipedia.org/wiki/Texture_filtering)
-- [Bilinear vs Nearest Neighbor Comparison](https://www.reddit.com/r/gamedev/comments/4bs0x5/nearest_neighbor_vs_bilinear_texture_filtering/)
-
----
-
-*Computer Architecture is Forever | Virtual Museum Exhibit 2026*
+  <h2>Learn More</h2>
+  <ul>
+    <li><a href="https://en.wikipedia.org/wiki/Texture_filtering">Wikipedia: Texture Filtering</a></li>
+    <li><a href="https://developer.arm.com/documentation/102449/0200/Texture-filtering">Arm Developer: Texture Filtering</a></li>
+    <li><a href="https://learn.microsoft.com/en-us/windows/uwp/graphics-concepts/bilinear-texture-filtering">Microsoft Learn: Bilinear Texture Filtering</a></li>
+  </ul>
+</section>
