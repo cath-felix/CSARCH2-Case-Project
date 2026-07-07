@@ -307,6 +307,28 @@ body {
   font-family: var(--font-ui);
 }
 
+.exhibit-references {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  line-height: 1.8;
+  padding-left: 1.5rem;
+}
+
+.exhibit-references li {
+  margin-bottom: 14px;
+}
+
+.exhibit-references a {
+  display: inline-block;
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+.exhibit-references em {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
 /* ===== HEADER (legacy) ===== */
 .site-header {
   border-bottom: 2px solid var(--border-accent);
