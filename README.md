@@ -121,6 +121,25 @@ csarch2-case-project
         └── global.css               # System directives for Tailwind utility injection
 ```
 
+## VI. Development Log
+
+**Date:** July 7, 2026
+
+### Aha Moments
+- We realized that a texture coordinate is not actually a pixel, but is used to compute a weighted color average of the four nearest texels (pixels in a texture
+  
+### Challenges
+- Choosing a topic that was interesting, modern, and simple enough to be presented as an interactive exhibit.
+- Finding reliable sources explaining how GPU texture filtering works in enough detail, since most resources only describe the algorithms rather than the underlying hardware.
+
+### Creative Development
+- Designed a magnifier slider to help users clearly observe the visual differences between nearest neighbor interpolation and bilinear filtering.
+- Chose a dark color palette with soft accent colors to improve readability while maintaining a modern aesthetic.
+
+### What We Learned
+- Bilinear Filtering samples four neighboring texels to a specific sampling point and interpolates between them.
+- Modern GPUs include specialized hardware (TMUs) specifically for texture sampling.
+
 ## References
 
 * Documentation - Texture filtering. (n.d.). Arm Developer. https://developer.arm.com/documentation/102449/0200/Texture-filtering
