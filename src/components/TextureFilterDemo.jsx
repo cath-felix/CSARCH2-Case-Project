@@ -250,7 +250,7 @@ export default function TextureFilterDemo() {
   };
 
   return (
-    <div style={{ maxWidth: '100%' }}>
+    <div className="texture-filter-demo" style={{ maxWidth: '100%' }}>
       {/* ===== MAIN DEMO CARD ===== */}
       <div style={{
         background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
