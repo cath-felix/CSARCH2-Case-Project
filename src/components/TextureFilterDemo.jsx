@@ -1,14 +1,13 @@
 // src/components/TextureFilterDemo.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-// Fixed virtual texture resolution (like a real 16x16 sprite asset in VRAM)
-const TEXTURE_RES = 16;
 // Fixed number of screen-space sample cells we draw, independent of zoom.
 // This is what lets the demo stay smooth all the way to 32x instead of
 // freezing once the old gridSize cap kicked in.
 const SCREEN_RES = 48;
 // Static viewport box size on the page (no more shrinking/growing with zoom)
 const VIEWPORT_SIZE = 400;
+const IMAGE_SRC = '/images/sample.png';
 
 export default function TextureFilterDemo() {
   // Only 2 modes: Nearest and Bilinear
@@ -33,6 +32,13 @@ export default function TextureFilterDemo() {
   ]);
   const [input, setInput] = useState('');
 
+  // Contains decoded image
+  // {width, height, pixels (image data)}
+  // Image data is stored as a flat array containing 
+  // four integers (0-255) for each pixel: r, g, b, alpha
+  const [texture, setTexture] = useState(null);
+  const [loadStatus, setLoadStatus] = useState('loading');
+
   const currentMode = MODES[currentModeIndex];
 
   const toggleMode = () => {
@@ -43,43 +49,46 @@ export default function TextureFilterDemo() {
     addMessage(`📐 Formula: ${mode.formula}`, 'info');
   };
 
-  // ---- Texel color generators (operate on integer texel coords 0..TEXTURE_RES-1) ----
+  // Loads an image once when the component is first mounted
+  // Converts image into raw pixel data used later for texture filtering
+  useEffect(() => {
+    const img = new Image(); //HTML image object
 
-  const isTextTexel = (tx, ty) => {
-    const lo = TEXTURE_RES / 4;
-    const hi = TEXTURE_RES * 0.75;
-    return tx >= lo && tx < hi && ty >= lo && ty < hi;
-  };
+    img.onload = () => {
+      // Canvas is used to extract the image's pixel data
+      // It is not displayed
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      // 2D rendering context for drawing the image on the canvas
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      // Retrieve pixel data from the canvas which is a flat integer array
+      const imageData = ctx.getImageData(0, 0, img.width, img.height);
+      
+      // Store texture information
+      setTexture({
+        width: img.width,
+        height: img.height,
+        pixels: imageData.data
+      }); 
+      setLoadStatus('ready');
+      addMessage(`🖼️ Loaded texture (${img.width}×${img.height}) from ${IMAGE_SRC}`, 'success');
+    };
+    
+    img.onerror = () => {
+      setLoadStatus('error');
+      addMessage(`❌ Could not load image at ${IMAGE_SRC}`, 'error');
+    };
 
-  const isRingTexel = (tx, ty) => {
-    const centerX = TEXTURE_RES / 2;
-    const centerY = TEXTURE_RES / 2;
-    const dist = Math.sqrt((tx - centerX) ** 2 + (ty - centerY) ** 2);
-    const maxDist = TEXTURE_RES / 2;
-    return Math.floor((dist / maxDist) * 4) % 2 === 0;
-  };
+    // Start loading the image
+    img.src = IMAGE_SRC
+  }, []);
 
-  // Sharp, discrete palette used by Nearest Neighbor
-  const nearestColorHex = (tx, ty) => {
-    const isEven = (tx + ty) % 2 === 0;
-    const isText = isTextTexel(tx, ty);
-    const ring = isRingTexel(tx, ty);
-    if (isText && isEven) return '#e74c3c';
-    if (isText) return '#2ecc71';
-    if (ring) return '#3498db';
-    if (isEven) return '#2c3e50';
-    return '#ecf0f1';
-  };
-
-  // Continuous-valued color used by Bilinear (so adjacent texels can be blended)
-  const bilinearColorRGB = (tx, ty) => {
-    const isText = isTextTexel(tx, ty);
-    const blendX = Math.sin((tx / TEXTURE_RES) * Math.PI * 2) * 0.5 + 0.5;
-    const blendY = Math.cos((ty / TEXTURE_RES) * Math.PI * 2) * 0.5 + 0.5;
-    const r = (80 + blendX * 120 + (isText ? 60 : 0)) % 255;
-    const g = (60 + blendY * 100 + (isText ? 60 : 0)) % 255;
-    const b = (180 - blendX * 80 + 255) % 255;
-    return { r, g, b };
+  const getTexelRGB = (tx, ty) => {
+    const {width, pixels} = texture;
+    const idx = (ty * width + tx) * 4;
+    return {r: pixels[idx], g: pixels[idx + 1], b: pixels[idx + 2]};
   };
 
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -89,37 +98,69 @@ export default function TextureFilterDemo() {
   // The zoom slider only changes how many texels are visible (the UV window),
   // never the loop bounds — that's what removes the 6.5x freeze.
   const renderTexture = () => {
+    if (loadStatus === 'loading') {
+      return (
+        <div style={{
+          width: VIEWPORT_SIZE, height: VIEWPORT_SIZE, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', margin: '0 auto',
+          border: '4px solid #2d3436', borderRadius: '12px', backgroundColor: '#1a1a2e',
+          color: '#ae8e6cf', fontFamily: 'monospace'
+        }}>
+          Loading texture...
+        </div>
+      );
+    }
+
+    if (loadStatus === 'error') {
+      return (
+        <div style={{
+          width: VIEWPORT_SIZE, height: VIEWPORT_SIZE, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', margin: '0 auto',
+          border: '4px solid #2d3436', borderRadius: '12px', backgroundColor: '#1a1a2e',
+          color: '#ff7675', fontFamily: 'monospace', textAlign: 'center', padding: '20px'
+        }}>
+          Couldn't load image at {IMAGE_SRC}
+        </div>
+      );
+    }
+
+    const texW = texture.width;
+    const texH = texture.height;
     const cellSize = VIEWPORT_SIZE / SCREEN_RES;
-    const visibleTexels = TEXTURE_RES / zoomLevel; // shrinks as zoom increases
-    const centerU = TEXTURE_RES / 2;
-    const centerV = TEXTURE_RES / 2;
+    const visibleTexelsX = texW / zoomLevel; // shrinks as zoom increases
+    const visibleTexelsY = texH / zoomLevel;
+    const centerU = texW / 2;
+    const centerV = texH / 2;
     const mode = currentMode.id;
     const pixels = [];
 
     for (let sy = 0; sy < SCREEN_RES; sy++) {
       for (let sx = 0; sx < SCREEN_RES; sx++) {
         // Map this screen cell to a continuous texture coordinate (u, v)
-        const u = centerU - visibleTexels / 2 + ((sx + 0.5) / SCREEN_RES) * visibleTexels;
-        const v = centerV - visibleTexels / 2 + ((sy + 0.5) / SCREEN_RES) * visibleTexels;
+        const u = centerU - visibleTexelsX / 2 + ((sx + 0.5) / SCREEN_RES) * visibleTexelsX;
+        const v = centerV - visibleTexelsY / 2 + ((sy + 0.5) / SCREEN_RES) * visibleTexelsY;
 
         let color;
 
         if (mode === 'nearest') {
-          const tx = clamp(Math.floor(u), 0, TEXTURE_RES - 1);
-          const ty = clamp(Math.floor(v), 0, TEXTURE_RES - 1);
-          color = nearestColorHex(tx, ty);
+          // Get single closest pixel
+          const tx = clamp(Math.floor(u), 0, texW - 1);
+          const ty = clamp(Math.floor(v), 0, texH - 1);
+          const c = getTexelRGB(tx, ty);
+          color = `rgb(${c.r}, ${c.g}, ${c.b})`;
         } else {
-          const tx0 = clamp(Math.floor(u), 0, TEXTURE_RES - 1);
-          const ty0 = clamp(Math.floor(v), 0, TEXTURE_RES - 1);
-          const tx1 = clamp(tx0 + 1, 0, TEXTURE_RES - 1);
-          const ty1 = clamp(ty0 + 1, 0, TEXTURE_RES - 1);
+          // Bilinear: blend 4 surrounding pixels to (u, v)
+          const tx0 = clamp(Math.floor(u), 0, texW - 1);
+          const ty0 = clamp(Math.floor(v), 0, texH - 1);
+          const tx1 = clamp(tx0 + 1, 0, texW - 1);
+          const ty1 = clamp(ty0 + 1, 0, texH - 1);
           const fx = clamp(u - Math.floor(u), 0, 1);
           const fy = clamp(v - Math.floor(v), 0, 1);
 
-          const c00 = bilinearColorRGB(tx0, ty0);
-          const c10 = bilinearColorRGB(tx1, ty0);
-          const c01 = bilinearColorRGB(tx0, ty1);
-          const c11 = bilinearColorRGB(tx1, ty1);
+          const c00 = getTexelRGB(tx0, ty0);
+          const c10 = getTexelRGB(tx1, ty0);
+          const c01 = getTexelRGB(tx0, ty1);
+          const c11 = getTexelRGB(tx1, ty1);
 
           const top = {
             r: lerp(c00.r, c10.r, fx),
@@ -131,6 +172,7 @@ export default function TextureFilterDemo() {
             g: lerp(c01.g, c11.g, fx),
             b: lerp(c01.b, c11.b, fx),
           };
+
           const final = {
             r: Math.round(lerp(top.r, bottom.r, fy)),
             g: Math.round(lerp(top.g, bottom.g, fy)),
@@ -157,6 +199,7 @@ export default function TextureFilterDemo() {
         <svg
           width={VIEWPORT_SIZE}
           height={VIEWPORT_SIZE}
+          shapeRendering="crispEdges" //fix grid artifacts
           style={{
             border: '4px solid #2d3436',
             borderRadius: '12px',
@@ -179,7 +222,7 @@ export default function TextureFilterDemo() {
           fontSize: '0.75rem',
           fontFamily: 'monospace'
         }}>
-          🔍 {zoomLevel}x | {currentMode.label} | {visibleTexels.toFixed(2)} texels visible
+          🔍 {zoomLevel}x | {currentMode.label} | {visibleTexelsX.toFixed(2)} x {visibleTexelsY.toFixed(2)} texels visible
         </div>
       </div>
     );
