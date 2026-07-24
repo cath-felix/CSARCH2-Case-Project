@@ -135,9 +135,11 @@ csarch2-case-project
 ### Creative Development
 - Designed a magnifier slider to help users clearly observe the visual differences between nearest neighbor interpolation and bilinear filtering.
 - Chose a dark color palette with soft accent colors to improve readability while maintaining a modern aesthetic.
+- The Texture Filter Interactive Component implementation was updated to feature loading an image and using the mapped image for texture filtering. This allowed for a better viewing experience of live texture filtering and comparison between the two texture filtering methods. 
 
 ### What We Learned
-- Bilinear Filtering samples four neighboring texels to a specific sampling point and interpolates between them.
+- Bilinear Filtering samples four neighboring texels to a specific sampling point and interpolates between them. Regardless of how zoomed in or out the image is, it always uses the four nearest texels, which causes the image to look blurry when zoomed out and more detailed when zoomed in.
+- Nearest-neighbor texture filtering isn't necessarily a budget or cheaper alternative for texture filtering, although it does have lower cost. It is commonly chosen for its sharper and blockier features for video games that feature pixel art or a blockier art style. 
 - Modern GPUs include specialized hardware (TMUs) specifically for texture sampling.
 
 
