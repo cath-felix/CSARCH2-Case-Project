@@ -140,6 +140,87 @@ csarch2-case-project
 - Bilinear Filtering samples four neighboring texels to a specific sampling point and interpolates between them.
 - Modern GPUs include specialized hardware (TMUs) specifically for texture sampling.
 
+
+## VII. AI/LLM Disclosure Statement
+
+**Date:** July 24, 2026
+
+### Use of AI Tools
+
+This project utilized **AI-assisted tools** (including large language models such as ChatGPT/Claude) in the following capacities:
+
+| Area | How AI Was Used |
+|------|-----------------|
+| **Code Generation** | AI assisted in generating boilerplate React component code, Astro framework setup, and MDX content structure |
+| **Debugging** | AI helped troubleshoot errors (e.g., `export default` missing, Vercel deployment issues, Tailwind compatibility) |
+| **Concept Explanation** | AI helped explain complex topics like texture filtering, GPU pipelines, and interpolation methods |
+| **UI/UX Suggestions** | AI provided recommendations for interactive elements (slider, toggle, console) and styling |
+
+### Human Oversight and Contribution
+
+All AI-generated outputs were:
+
+- **Reviewed and validated** by the group members
+- **Customized** to match project requirements
+- **Tested** for functionality and correctness
+- **Integrated** with original research and content
+
+**Human contributions included:**
+
+- Topic selection and research (Nearest Neighbor vs Bilinear Filtering)
+- Interactive element design and user flow planning
+- Content writing and educational explanations
+- Deployment and GitHub management
+- Visual style and layout decisions
+- Testing and quality assurance
+
+### Transparency
+
+| Detail | Information |
+|--------|-------------|
+| **AI Tool Used** | ChatGPT / Claude (LLM-based assistants) |
+| **Purpose** | Code assistance, debugging, content drafting, concept explanation |
+| **Human Oversight** | 100% — all AI output was reviewed, tested, and modified as needed |
+| **Project Ownership** | All group members take full responsibility for the final work |
+
+### Academic Integrity
+
+- This project is submitted as a **group effort** for CSARCH2.
+- AI assistance is used as a **learning tool**, not as a substitute for understanding.
+- The final work represents the group's own research, understanding, and effort.
+
+### AI-Assisted Code in This Project
+
+| File | AI Contribution | Human Adjustment |
+|------|-----------------|------------------|
+| `TextureSimulator.jsx` | Base React component structure | Customized logic, styling, and interactivity |
+| `index.mdx` | Content structure and layout | Written and edited for educational clarity |
+| `ExhibitLayout.astro` | Astro layout boilerplate | Modified for project-specific branding |
+| `README.md` | Initial draft structure | Customized with project details and links |
+| `astro.config.mjs` | Configuration suggestions | Adapted to project requirements |
+
+### Ethical Use Statement
+
+We acknowledge that:
+
+- AI tools are used to **support** learning, not replace it
+- All group members understand the code and content submitted
+- We are responsible for the **accuracy** and **originality** of our work
+- We have **documented** all AI assistance used
+
+### Statement of Responsibility
+
+> *We, the undersigned group members, certify that this work is our own. Any use of AI tools has been documented and reviewed. We understand the material and take full responsibility for the project's content and functionality.*
+
+**Group Members:**
+
+1. Arugay, Enrico Joaquin C.
+2. Cailao, Carlos Luis B.
+3. Felix, Catherine Liberty B.
+4. Gamboa, Raphael R.
+5. Gutierrez, Michael Luis J.
+
+
 ## References
 
 * Documentation - Texture filtering. (n.d.). Arm Developer. https://developer.arm.com/documentation/102449/0200/Texture-filtering
